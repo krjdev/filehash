@@ -7,9 +7,9 @@
  * Project  : FileHashCLI in FileHash solution
  * Author   : Copyright (C) 2017 krjdev@gmail.com
  * Created  : 2017-01-28
- * Modified : 
+ * Modified : 2018-07-13
  * Revised  : 
- * Version  : 0.1.0.0
+ * Version  : 0.1.1.0
  * License  : GPLv3+ (see file LICENSE_gplv3.txt)
  *
  * NOTE: This code is currently below version 1.0, and therefore is considered
@@ -39,6 +39,13 @@ namespace FileHashCLI {
 		private const string msgMeaninglessBinaryText = "{0}: the --binary and --text options are meaningless " + 
 			"when verifying checksums";
 		private const string msgMeaninglessTag = "{0}: the --tag option is meaningless when verifying checksums";
+
+		private static string assName;
+		private static bool optWarn;
+		private static bool optStrict;
+		private static bool optIgnore;
+		private static bool optStatus;
+		private static bool optQuiet;
 
 		private static FileVersionInfo GetAssemblyFileVersion()
 		{
@@ -136,9 +143,115 @@ namespace FileHashCLI {
 				Console.Error.WriteLine ("{0}: {1}: {2}", assName, file, ex.Message);
 		}
 
+		private static int CheckFile(string file, HashType htype)
+		{
+			StreamReader sr = null;
+			HashRecord hr = null;
+			string line;
+			int lineCnt = 0;
+			int errFormat = 0;
+			int errOpenRead = 0;
+			int errFailed = 0;
+			bool bErrOpenRead;
+			int ret = 0;
+			byte[] hash;
+
+			try {
+				if (!file.Equals("-"))
+					sr = new StreamReader (file);
+				else
+					sr = new StreamReader (Console.OpenStandardInput ());
+			} catch (Exception ex) {
+				ShowException (ex, assName, file);
+			}
+
+			while (!sr.EndOfStream) {
+				bErrOpenRead = false;
+				hash = null;
+
+				try {
+					line = sr.ReadLine ();
+					hr = Hash.GetHashRecordFromString (line);
+					lineCnt++;
+
+					if (hr != null)
+						hash = Hash.ComputeHash (hr.file, hr.htype);
+					else {
+						if (optWarn)
+							Console.Error.WriteLine(msgNoFormattedLine, assName, file,
+								lineCnt, Hash.HashTypeToString(htype));
+
+						errFormat++;
+
+						if (optStrict)
+							ret = 1;
+
+						continue;
+					}
+				} catch (Exception ex) {
+					if (!optIgnore && !optStatus)
+						ShowException (ex, assName, hr.file);
+
+					errOpenRead++;
+					bErrOpenRead = true;
+					ret = 1;
+				}
+
+				if (!bErrOpenRead) {
+					if (Hash.HashEquals(hash, hr.hash)) {
+						if (!optQuiet && !optStatus)
+							Console.WriteLine(hr.file + ": OK");
+					} else {
+						if (!optStatus)
+							Console.WriteLine(hr.file + ": FAILED");
+
+						errFailed++;
+						ret = 1;
+					}
+				} else
+					if (!optIgnore && !optStatus)
+						Console.WriteLine (hr.file + ": FAILED open or read");
+			}
+
+			if ((errFormat >= 1) && (errFormat != lineCnt) && !optStatus)
+				Console.Error.WriteLine (msgWarnFormat, assName, errFormat,
+					(errFormat > 1) ? "s" : "");
+			else if (errFormat == lineCnt)
+				Console.Error.WriteLine(msgNoFormattedLines, assName, file, htype);
+
+			if ((errOpenRead >= 1) && !optIgnore && !optStatus)
+				Console.Error.WriteLine (msgWarnOpenRead, assName, errOpenRead,
+					(errOpenRead > 1) ? "s" : "");
+
+			if (errFailed >= 1 && !optStatus)
+				Console.Error.WriteLine(msgWarnFailed, assName, errFailed,
+					(errFailed > 1) ? "s" : "");
+
+			return ret;
+		}
+
+		private static int ComputeHash(string file, HashType htype, HashFormat hformat)
+		{
+			byte[] hash;
+
+			try {
+				if (!file.Equals("-"))
+					hash = Hash.ComputeHash (file, htype);
+				else
+					hash = Hash.ComputeHash(Console.OpenStandardInput (), htype);
+
+				Console.WriteLine (Hash.ToHashString (hash, file, htype, hformat));
+			} catch (Exception ex) {
+				ShowException (ex, assName, file);
+				return 1;
+			}
+
+			return 0;
+		}
+
 		public static int Main (string[] args)
 		{
-			string assName = GetAssemblyFileVersion ().OriginalFilename;
+			assName = GetAssemblyFileVersion ().OriginalFilename;
 			GetOptions argParser;
 			GetOptions.Option[] opts = {
 				new GetOptions.Option(0, 'b', "binary", GetOptions.ARGUMENT.NoArgument, false), // Not supported (dummy)
@@ -163,12 +276,11 @@ namespace FileHashCLI {
 			bool optCheck = false;
 			bool optTag = false;
 			bool optText = false;
-			bool optQuiet = false;
-			bool optIgnore = false;
-			bool optStatus = false;
-			bool optWarn = false;
-			bool optStrict = false;
-			byte[] hash;
+			optQuiet = false;
+			optIgnore = false;
+			optStatus = false;
+			optWarn = false;
+			optStrict = false;
 			int ret = 0;
 
 			try {
@@ -274,98 +386,9 @@ namespace FileHashCLI {
 
 			foreach (string file in files)
 				if (optCheck) {
-					StreamReader sr = null;
-					HashRecord hr = null;
-					string line;
-					int lineCnt = 0;
-					int errFormat = 0;
-					int errOpenRead = 0;
-					int errFailed = 0;
-					bool bErrOpenRead;
-
-					try {
-						if (!file.Equals("-"))
-							sr = new StreamReader (file);
-						else
-							sr = new StreamReader (Console.OpenStandardInput ());
-					} catch (Exception ex) {
-						ShowException (ex, assName, file);
-						continue;
-					}
-
-					while (!sr.EndOfStream) {
-						bErrOpenRead = false;
-						hash = null;
-
-						try {
-							line = sr.ReadLine ();
-							hr = Hash.GetHashRecordFromString (line);
-							lineCnt++;
-
-							if (hr != null)
-								hash = Hash.ComputeHash (hr.file, hr.htype);
-							else {
-								if (optWarn)
-									Console.Error.WriteLine(msgNoFormattedLine, assName, file,
-										lineCnt, Hash.HashTypeToString(htype));
-
-								errFormat++;
-
-								if (optStrict)
-									ret = 1;
-
-								continue;
-							}
-						} catch (Exception ex) {
-							if (!optIgnore && !optStatus)
-								ShowException (ex, assName, hr.file);
-
-							errOpenRead++;
-							bErrOpenRead = true;
-							ret = 1;
-						}
-
-						if (!bErrOpenRead) {
-							if (Hash.HashEquals(hash, hr.hash)) {
-								if (!optQuiet && !optStatus)
-									Console.WriteLine(hr.file + ": OK");
-							} else {
-								if (!optStatus)
-									Console.WriteLine(hr.file + ": FAILED");
-
-								errFailed++;
-								ret = 1;
-							}
-						} else
-							if (!optIgnore && !optStatus)
-								Console.WriteLine (hr.file + ": FAILED open or read");
-					}
-
-					if ((errFormat >= 1) && (errFormat != lineCnt) && !optStatus)
-						Console.Error.WriteLine (msgWarnFormat, assName, errFormat,
-							(errFormat > 1) ? "s" : "");
-					else if (errFormat == lineCnt)
-						Console.Error.WriteLine(msgNoFormattedLines, assName, file, htype);
-
-					if ((errOpenRead >= 1) && !optIgnore && !optStatus)
-						Console.Error.WriteLine (msgWarnOpenRead, assName, errOpenRead,
-							(errOpenRead > 1) ? "s" : "");
-
-					if (errFailed >= 1 && !optStatus)
-						Console.Error.WriteLine(msgWarnFailed, assName, errFailed,
-							(errFailed > 1) ? "s" : "");
+					ret = CheckFile (file, htype);
 				} else {
-					try {
-						if (!file.Equals("-"))
-							hash = Hash.ComputeHash (file, htype);
-						else
-							hash = Hash.ComputeHash(Console.OpenStandardInput (), htype);
-						
-						Console.WriteLine (Hash.ToHashString (hash, file, htype, hformat));
-					} catch (Exception ex) {
-						ShowException (ex, assName, file);
-						ret = 1;
-					}
+					ret = ComputeHash (file, htype, hformat);
 				}
 
 			return ret;

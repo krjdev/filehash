@@ -4,12 +4,12 @@
  * Title    : CLI argument parser; similar to the GNU C Library (glibc) functions
  *            getopt() and getopt_long()
  * Project  : CLIUtils in FileHash solution
- * Author   : Copyright (C) 2017 krjdev@gmail.com
+ * Author   : Copyright (C) 2017, 2018 krjdev@gmail.com
  * Created  : 2017-01-28
- * Modified : 
+ * Modified : 2018-07-13
  * Revised  : 
- * Version  : 0.1.0.0
- * License  : BSD-3-Clause (see file LICENSE_bsd3.txt)
+ * Version  : 0.1.1.0
+ * License  : ISC (see file LICENSE_isc.txt)
  *
  * NOTE: This code is currently below version 1.0, and therefore is considered
  * to be lacking in some functionality or documentation, or may not be fully
@@ -45,12 +45,13 @@ namespace CLIUtils
 			private readonly bool o_isRepeated;
 
 			public int optID { get { return o_optID; } }
-			public Nullable<char> optShort { get { return o_optShort; } }	// short option (Example: -t)
-			public string optLong { get { return o_optLong; } }				// long option (Example: --type)
-			public ARGUMENT hasArg { get { return o_hasArg; } }				// optional, required or no argument
-			public bool isRepeated { get { return o_isRepeated; } }			// true if this option can occur several times
+			public Nullable<char> optShort { get { return o_optShort; } }
+			public string optLong { get { return o_optLong; } }
+			public ARGUMENT hasArg { get { return o_hasArg; } }
+			public bool isRepeated { get { return o_isRepeated; } }
 
-			public Option (int optID, Nullable<char> optShort, string optLong, ARGUMENT hasArg, bool isRepeated)
+			public Option (int optID, Nullable<char> optShort, string optLong, 
+				ARGUMENT hasArg, bool isRepeated)
 			{
 				o_optID = optID;
 				o_optShort = optShort;
@@ -82,7 +83,8 @@ namespace CLIUtils
 			public bool isRebeated { get { return m_isRepeated; } set { m_isRepeated = value; } }
 			public bool valid { get { return m_valid; } set { m_valid = value; } }
 
-			public OptionPrivate (int optID, Nullable<char> optShort, string optLong, ARGUMENT hasArg, bool isRepeated)
+			public OptionPrivate (int optID, Nullable<char> optShort, string optLong, 
+				ARGUMENT hasArg, bool isRepeated)
 			{
 				m_args = new List<string> ();
 				m_optID = optID;
@@ -95,13 +97,15 @@ namespace CLIUtils
 
 			public void AddArgument (string arg)
 			{
-				if (m_valid && (hasArg == ARGUMENT.RequiredArgument || hasArg == ARGUMENT.OptionalArgument))
+				if (m_valid && (hasArg == ARGUMENT.RequiredArgument || 
+					hasArg == ARGUMENT.OptionalArgument))
 					m_args.Add (arg);
 			}
 
 			public string[] ArgumentsToArray ()
 			{
-				if (m_valid && (hasArg == ARGUMENT.RequiredArgument || hasArg == ARGUMENT.OptionalArgument))
+				if (m_valid && (hasArg == ARGUMENT.RequiredArgument || 
+					hasArg == ARGUMENT.OptionalArgument))
 					return m_args.ToArray ();
 				else
 					return null;
@@ -117,7 +121,7 @@ namespace CLIUtils
 		private int m_noneOpts_id;
 		private bool m_initDone;
 
-		private void Initialize()
+		private void ParseShortOption(int i)
 		{
 			string exmsg;
 			int optID;
@@ -127,128 +131,145 @@ namespace CLIUtils
 			bool isRepeated;
 			Nullable<Option> optInput;
 			OptionPrivate optInternal;
+			string tmp;
+			List<string> sopts;
 
-			for (int i = 0; i < m_args.Length; i++)
-				if (IsShortOption (m_args [i])) {
-					string tmp;
-					List<string> sopts;
+			tmp = ExtractOption (m_args [i]);
+			sopts = CombinedShortOptionsToStringList (tmp);
 
-					tmp = ExtractOption (m_args [i]);
-					sopts = CombinedShortOptionsToStringList (tmp);
+			foreach (string s in sopts) {
+				string arg = null;
+				int id;
 
-					foreach (string s in sopts) {
-						string arg = null;
-						int id;
+				if ((optInput = FindInOptionInput (s.ToCharArray()[0])) == null) {
+					exmsg = "invalid option '-" + s.ToCharArray()[0] + "'";
+					throw new GetOptionsException (exmsg);
+				}
 
-						if ((optInput = FindInOptionInput (s.ToCharArray()[0])) == null) {
-							exmsg = "invalid option '-" + s.ToCharArray()[0] + "'";
+				optID = optInput.Value.optID;
+				optShort = optInput.Value.optShort;
+				optLong = optInput.Value.optLong;
+				hasArg = optInput.Value.hasArg;
+				isRepeated = optInput.Value.isRepeated;
+
+				if (hasArg == ARGUMENT.RequiredArgument || hasArg == ARGUMENT.OptionalArgument) {
+					arg = ExtractOptionArgument (s, true);
+
+					if ((arg == null) && (m_args.Length > (i + 1))) {
+						i++;
+						arg = m_args [i];
+					} else {
+						if ((hasArg == ARGUMENT.RequiredArgument) && (arg == null)) {
+							exmsg = "option \"-" + s.ToCharArray()[0] + "\" requires an argument";
 							throw new GetOptionsException (exmsg);
 						}
+					}
+				}
 
-						optID = optInput.Value.optID;
-						optShort = optInput.Value.optShort;
-						optLong = optInput.Value.optLong;
-						hasArg = optInput.Value.hasArg;
-						isRepeated = optInput.Value.isRepeated;
+				optInternal = FindInOptionInternal (optShort);
 
-						if (hasArg == ARGUMENT.RequiredArgument || hasArg == ARGUMENT.OptionalArgument) {
-							arg = ExtractOptionArgument (s, true);
+				if (optInternal == null) {
+					optInternal = new OptionPrivate (optID, optShort, optLong, hasArg, isRepeated);
+					optInternal.valid = true;
 
-							if ((arg == null) && (m_args.Length > (i + 1))) {
-								i++;
-								arg = m_args [i];
-							} else {
-								if ((hasArg == ARGUMENT.RequiredArgument) && (arg == null)) {
-									exmsg = "option \"-" + s.ToCharArray()[0] + "\" requires an argument";
-									throw new GetOptionsException (exmsg);
-								}
-							}
-						}
+					if (hasArg == ARGUMENT.RequiredArgument || hasArg == ARGUMENT.OptionalArgument)
+					if (arg != null)
+						optInternal.AddArgument (arg);
 
-						optInternal = FindInOptionInternal (optShort);
+					m_optsInternal.Add (optInternal);
+				} else {
+					if ((id = FindOptionInternalIndex (optShort)) != -1) {
+						if (id >= m_optsInternal.Count)
+							throw new GetOptionsException ("Oops, internal error (index out of range)");
 
-						if (optInternal == null) {
-							optInternal = new OptionPrivate (optID, optShort, optLong, hasArg, isRepeated);
-							optInternal.valid = true;
-
-							if (hasArg == ARGUMENT.RequiredArgument || hasArg == ARGUMENT.OptionalArgument)
-								if (arg != null)
-									optInternal.AddArgument (arg);
-
-							m_optsInternal.Add (optInternal);
-						} else {
-							if ((id = FindOptionInternalIndex (optShort)) != -1) {
-								if (id >= m_optsInternal.Count)
-									throw new GetOptionsException ("Oops, internal error (index out of range)");
-
-								if (optInternal.isRebeated)
-									if (arg != null)
-										m_optsInternal [id].AddArgument (arg);
-								else {
-									exmsg = "option '-" + optShort + "' cannot occur several times";
-									throw new GetOptionsException (exmsg);
-								}
-							}
+						if (optInternal.isRebeated)
+						if (arg != null)
+							m_optsInternal [id].AddArgument (arg);
+						else {
+							exmsg = "option '-" + optShort + "' cannot occur several times";
+							throw new GetOptionsException (exmsg);
 						}
 					}
-				} else if (IsLongOption (m_args [i])) {
-					string tmp;
-					string arg = null;
-					int id;
+				}
+			}
+		}
 
-					tmp = ExtractOption (m_args [i]);
+		private void ParseLongOption(int i)
+		{
+			string exmsg;
+			int optID;
+			string optLong;
+			Nullable<char> optShort;
+			ARGUMENT hasArg;
+			bool isRepeated;
+			Nullable<Option> optInput;
+			OptionPrivate optInternal;
+			string tmp;
+			string arg = null;
+			int id;
 
-					if ((optInput = FindInOptionInput (tmp)) == null) {
-						exmsg = "invalid option '--" + tmp + "'";
+			tmp = ExtractOption (m_args [i]);
+
+			if ((optInput = FindInOptionInput (tmp)) == null) {
+				exmsg = "invalid option '--" + tmp + "'";
+				throw new GetOptionsException (exmsg);
+			}
+
+			optID = optInput.Value.optID;
+			optShort = optInput.Value.optShort;
+			optLong = optInput.Value.optLong;
+			hasArg = optInput.Value.hasArg;
+			isRepeated = optInput.Value.isRepeated;
+
+			if (hasArg == ARGUMENT.RequiredArgument || hasArg == ARGUMENT.OptionalArgument) {
+				arg = ExtractOptionArgument (m_args[i], false);
+
+				if ((arg == null) && (m_args.Length > (i + 1))) {
+					i++;
+					arg = m_args [i];
+				} else {
+					if ((hasArg == ARGUMENT.RequiredArgument) && (arg == null)) {
+						exmsg = "option '" + m_args[i].Remove (m_args[i].IndexOf ('='),
+							(m_args[i].Length - m_args[i].IndexOf ('='))) + "' requires an argument";
 						throw new GetOptionsException (exmsg);
 					}
+				}
+			}
 
-					optID = optInput.Value.optID;
-					optShort = optInput.Value.optShort;
-					optLong = optInput.Value.optLong;
-					hasArg = optInput.Value.hasArg;
-					isRepeated = optInput.Value.isRepeated;
+			optInternal = FindInOptionInternal (optLong);
 
-					if (hasArg == ARGUMENT.RequiredArgument || hasArg == ARGUMENT.OptionalArgument) {
-						arg = ExtractOptionArgument (m_args[i], false);
+			if (optInternal == null) {
+				optInternal = new OptionPrivate (optID, optShort, optLong, hasArg, isRepeated);
+				optInternal.valid = true;
 
-						if ((arg == null) && (m_args.Length > (i + 1))) {
-							i++;
-							arg = m_args [i];
-						} else {
-							if ((hasArg == ARGUMENT.RequiredArgument) && (arg == null)) {
-								exmsg = "option '" + m_args[i].Remove (m_args[i].IndexOf ('='),
-									(m_args[i].Length - m_args[i].IndexOf ('='))) + "' requires an argument";
-								throw new GetOptionsException (exmsg);
-							}
-						}
+				if (hasArg == ARGUMENT.RequiredArgument || hasArg == ARGUMENT.OptionalArgument)
+				if (arg != null)
+					optInternal.AddArgument (arg);
+
+				m_optsInternal.Add (optInternal);
+			} else {
+				if ((id = FindOptionInternalIndex (optLong)) != -1) {
+					if (id >= m_optsInternal.Count)
+						throw new GetOptionsException ("Oops, internal error (index out of range)");
+
+					if (optInternal.isRebeated)
+					if (arg != null)
+						m_optsInternal [id].AddArgument (arg);
+					else {
+						exmsg = "option '--" + optLong + "' cannot occur several times";
+						throw new GetOptionsException (exmsg);
 					}
+				}
+			}
+		}
 
-					optInternal = FindInOptionInternal (optLong);
-
-					if (optInternal == null) {
-						optInternal = new OptionPrivate (optID, optShort, optLong, hasArg, isRepeated);
-						optInternal.valid = true;
-
-						if (hasArg == ARGUMENT.RequiredArgument || hasArg == ARGUMENT.OptionalArgument)
-							if (arg != null)
-								optInternal.AddArgument (arg);
-
-						m_optsInternal.Add (optInternal);
-					} else {
-						if ((id = FindOptionInternalIndex (optLong)) != -1) {
-							if (id >= m_optsInternal.Count)
-								throw new GetOptionsException ("Oops, internal error (index out of range)");
-
-							if (optInternal.isRebeated)
-								if (arg != null)
-									m_optsInternal [id].AddArgument (arg);
-							else {
-								exmsg = "option '--" + optLong + "' cannot occur several times";
-								throw new GetOptionsException (exmsg);
-							}
-						}
-					}
+		private void Initialize()
+		{			
+			for (int i = 0; i < m_args.Length; i++)
+				if (IsShortOption (m_args [i])) {
+					ParseShortOption (i);
+				} else if (IsLongOption (m_args [i])) {
+					ParseLongOption (i);
 				} else
 					m_noneOpts.Add (m_args [i]);
 
