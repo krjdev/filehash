@@ -4,11 +4,11 @@
  * Title    : CLI argument parser; similar to the GNU C Library (glibc) functions
  *            getopt() and getopt_long()
  * Project  : CLIUtils in FileHash solution
- * Author   : Copyright (C) 2017, 2018 krjdev@gmail.com
+ * Author   : Copyright (C) 2017, 2018 Johannes Krottmayer <krjdev@gmail.com>
  * Created  : 2017-01-28
- * Modified : 2018-07-13
+ * Modified : 2018-09-03
  * Revised  : 
- * Version  : 0.1.1.0
+ * Version  : 0.1.1.1
  * License  : ISC (see file LICENSE_isc.txt)
  *
  * NOTE: This code is currently below version 1.0, and therefore is considered
@@ -267,7 +267,7 @@ namespace CLIUtils
 		{			
 			for (int i = 0; i < m_args.Length; i++)
 				if (IsShortOption (m_args [i])) {
-					ParseShortOption (i);
+					ParseShortOption (i++);
 				} else if (IsLongOption (m_args [i])) {
 					ParseLongOption (i);
 				} else
