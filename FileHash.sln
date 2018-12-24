@@ -1,15 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileHashCLI", "FileHashCLI\FileHashCLI.csproj", "{9F379E25-9C29-4EC2-9FDA-9EA5D0DD28D7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CFB6D603-45C0-46E2-BDF0-B055187AA858}"
 	ProjectSection(SolutionItems) = preProject
-		README.md = README.md
-		LICENSE_bsd3.txt = LICENSE_bsd3.txt
 		LICENSE_gplv3.txt = LICENSE_gplv3.txt
+		LICENSE_isc.txt = LICENSE_isc.txt
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "FileHashCore", "FileHashCore\FileHashCore.shproj", "{F0082B55-D2C2-4FCD-9692-3EDE08DCD91E}"
@@ -17,6 +17,12 @@ EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "CLIUtils", "CLIUtils\CLIUtils.shproj", "{D0AFF0C4-1C4D-452B-9905-E3B94409CB14}"
 EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		CLIUtils\CLIUtils.projitems*{9f379e25-9c29-4ec2-9fda-9ea5d0dd28d7}*SharedItemsImports = 4
+		FileHashCore\FileHashCore.projitems*{9f379e25-9c29-4ec2-9fda-9ea5d0dd28d7}*SharedItemsImports = 4
+		CLIUtils\CLIUtils.projitems*{d0aff0c4-1c4d-452b-9905-e3b94409cb14}*SharedItemsImports = 13
+		FileHashCore\FileHashCore.projitems*{f0082b55-d2c2-4fcd-9692-3ede08dcd91e}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
@@ -33,7 +39,11 @@ Global
 		{9F379E25-9C29-4EC2-9FDA-9EA5D0DD28D7}.Release|x86.ActiveCfg = Release|x86
 		{9F379E25-9C29-4EC2-9FDA-9EA5D0DD28D7}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D73FD5A4-E5FA-4530-9CED-2CA07CDFF37A}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		Policies = $0
@@ -44,15 +54,5 @@ Global
 		$1.inheritsSet = VisualStudio
 		$1.inheritsScope = text/plain
 		$1.scope = text/plain
-	EndGlobalSection
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		FileHashCore\FileHashCore.projitems*{5af181b7-23b4-497d-87ce-9ac763ae3743}*SharedItemsImports = 4
-		CLIUtils\CLIUtils.projitems*{9f379e25-9c29-4ec2-9fda-9ea5d0dd28d7}*SharedItemsImports = 4
-		FileHashCore\FileHashCore.projitems*{9f379e25-9c29-4ec2-9fda-9ea5d0dd28d7}*SharedItemsImports = 4
-		CLIUtils\CLIUtils.projitems*{d0aff0c4-1c4d-452b-9905-e3b94409cb14}*SharedItemsImports = 13
-		FileHashCore\FileHashCore.projitems*{f0082b55-d2c2-4fcd-9692-3ede08dcd91e}*SharedItemsImports = 13
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
