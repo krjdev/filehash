@@ -1,6 +1,6 @@
 # FileHash Command Line Utility (FileHash.exe)
 
-![FileHash Demo](https://krottmayer.com/img/demo_filehash.png)
+![FileHash Demo](https://krottmayer.com/images/FileHash_demo.png)
 
 **FileHash** is a "rewrite from sratch" in **C#** from the original programs *md5sum*, *sha1sum*, 
 *sha256sum*, *sha384sum* and *sha512sum*. These programs are parts of the [GNU core utilities](https://www.gnu.org/software/coreutils/coreutils.html). 
